@@ -275,48 +275,7 @@ function gen_colorPreference() {
 }
 
 // Create bonus number using same rule, excluding main
-function pickBonus_for(methodKey, totalStats, main) {
-  const exclude = new Set(main);
-  if (methodKey === "pureRandom" || methodKey === "consecutiveRandom") {
-    // uniform random excluding main
-    const pool = [];
-    for (let i = 1; i <= 45; i++) if (!exclude.has(i)) pool.push(i);
-    return pool[Math.floor(Math.random() * pool.length)];
-  }
-  if (methodKey === "weightedRandom") {
-    return weightedSampleWithoutReplacement(totalStats, 1, exclude)[0];
-  }
-  if (methodKey === "weightedWithConsecutive") {
-    return weightedSampleWithoutReplacement(totalStats, 1, exclude)[0];
-  }
-  if (methodKey === "weightedExcludeBottom10") {
-    const ex = bottom10FromTotal(totalStats);
-    for (const n of exclude) ex.add(n);
-    return weightedSampleWithoutReplacement(totalStats, 1, ex)[0];
-  }
-  if (methodKey === "colorPreference") {
-    const colors = getSelectedColors();
-    let pool = [];
-    for (const c of colors) {
-      const r = COLOR_TO_RANGE[c];
-      if (!r) continue;
-      for (let i = r[0]; i <= r[1]; i++) if (!exclude.has(i)) pool.push(i);
-    }
-    if (pool.length === 0) {
-      alert("보너스 번호를 위해 색을 더 선택해 주세요 (메인과 다른 숫자 필요).");
-      return null;
-    }
-    return pool[Math.floor(Math.random() * pool.length)];
-  }
-  return randomSampleWithoutReplacement(1, 45, 1)[0];
-}
-
-function wrapWithBonus(methodKey, totalStats, main) {
-  if (!main) return null;
-  const bonus = pickBonus_for(methodKey, totalStats, main);
-  if (bonus == null) return null;
-  return { main, bonus };
-}
+// 보너스 번호 생성 함수 삭제됨 - 더 이상 사용하지 않음
 
 function renderBallsWithBonus(main, bonus) {
   const mains = main
@@ -326,23 +285,54 @@ function renderBallsWithBonus(main, bonus) {
   return `${mains}${plusAndBonus}`;
 }
 
-function renderCard({ id, title, combo }) {
+function renderBallsOnly(main) {
+  return main
+    .map((n) => `<span class="ball ${colorClassByNumber(n)}">${n}</span>`)
+    .join("\n");
+}
+
+function renderCard({ id, title, combo, combos, showBonus = true }) {
   const titleHtml = title ? `<div class="card-head"><div class="card-title">${title}</div></div>` : "";
-  return `
-  <div class="card" data-card-id="${id}">
-    ${titleHtml}
-    <div class="flex items-center justify-between gap-2">
-      <div class="flex gap-1 items-center flex-wrap">${renderBallsWithBonus(combo.main, combo.bonus)}</div>
+  
+  // combos 배열이 있으면 여러 조합을 표시, 없으면 기존 단일 조합 표시
+  let contentHtml = "";
+  if (combos && combos.length > 0) {
+    // 여러 조합을 세로로 나열
+    contentHtml = combos.map((c, idx) => {
+      const ballsHtml = showBonus ? renderBallsWithBonus(c.main, c.bonus) : renderBallsOnly(c.main);
+      return `<div class="flex items-center justify-between gap-2 mb-2 last:mb-0">
+        <div class="flex gap-1 items-center flex-wrap">${ballsHtml}</div>
+        <div class="card-actions">
+          <button class="btn" data-action="copy" data-combo-index="${idx}">복사</button>
+        </div>
+      </div>`;
+    }).join("\n");
+  } else {
+    // 기존 단일 조합 표시 (기본 자동 생성용)
+    const ballsHtml = showBonus ? renderBallsWithBonus(combo.main, combo.bonus) : renderBallsOnly(combo.main);
+    contentHtml = `<div class="flex items-center justify-between gap-2">
+      <div class="flex gap-1 items-center flex-wrap">${ballsHtml}</div>
       <div class="card-actions">
         <button class="btn" data-action="copy">복사</button>
       </div>
-    </div>
+    </div>`;
+  }
+  
+  return `
+  <div class="card" data-card-id="${id}">
+    ${titleHtml}
+    ${contentHtml}
   </div>`;
 }
 
 function copyNumbers(combo) {
-  const text = `${combo.main.join(", ")} + ${combo.bonus}`;
-  navigator.clipboard?.writeText(text);
+  if (combo.bonus != null) {
+    const text = `${combo.main.join(", ")} + ${combo.bonus}`;
+    navigator.clipboard?.writeText(text);
+  } else {
+    const text = combo.main.join(", ");
+    navigator.clipboard?.writeText(text);
+  }
 }
 
 function saveFavorite(combo) {
@@ -394,15 +384,14 @@ function generateCustom() {
   const counts = getConditionCounts();
   for (const [key, label] of order) {
     const loop = counts[key] || 1;
+    const combos = [];
     for (let i = 1; i <= loop; i++) {
       const main = makers[key]();
-      const combo = wrapWithBonus(key, totalStats, main);
-      if (!combo) {
-        // 유효한 조합을 만들 수 없으므로 전체 생성을 중단
-        return;
-      }
-      cards.push({ id: `${key}-${i}`, title: `${label}`, combo });
+      // 사용자 지정 생성에서도 보너스 번호 생성하지 않음
+      combos.push({ main, bonus: null });
     }
+    // 각 조건당 하나의 카드만 생성하고, 그 안에 모든 조합을 포함
+    cards.push({ id: key, title: `${label}`, combos, showBonus: false });
   }
   const grid = document.getElementById("resultsGrid");
   grid.innerHTML = cards.map((c) => renderCard(c)).join("\n");
@@ -417,10 +406,29 @@ function handleCardAction(e) {
   const id = card.getAttribute("data-card-id");
   const titleEl = card.querySelector(".card-title");
   const title = titleEl ? titleEl.textContent : "";
+  
+  // 여러 조합이 있는 경우: 클릭한 버튼과 같은 줄의 번호들을 찾기
+  const comboIndex = btn.getAttribute("data-combo-index");
+  if (comboIndex !== null) {
+    // 여러 조합이 있는 카드: 해당 조합의 부모 div에서 번호 찾기
+    const comboRow = btn.closest("div.flex.items-center");
+    if (!comboRow) return;
+    const balls = Array.from(comboRow.querySelectorAll(".ball"));
+    if (balls.length < 6) return;
+    const main = balls.slice(0, 6).map((el) => Number(el.textContent));
+    const bonus = balls.length >= 7 ? Number(balls[balls.length - 1].textContent) : null;
+    const combo = { main, bonus };
+    const action = btn.getAttribute("data-action");
+    if (action === "copy") copyNumbers(combo);
+    return;
+  }
+  
+  // 단일 조합인 경우: 기존 로직
   const balls = Array.from(card.querySelectorAll(".ball"));
-  if (balls.length < 7) return; // 메인 6개 + 보너스 1개 필요
+  if (balls.length < 6) return; // 메인 6개 최소 필요
   const main = balls.slice(0, 6).map((el) => Number(el.textContent));
-  const bonus = Number(balls[balls.length - 1].textContent);
+  // 보너스 번호가 있으면 (7개 이상) 가져오고, 없으면 null
+  const bonus = balls.length >= 7 ? Number(balls[balls.length - 1].textContent) : null;
   const combo = { main, bonus };
   const action = btn.getAttribute("data-action");
   if (action === "copy") copyNumbers(combo);
@@ -467,7 +475,8 @@ function generateAuto10() {
   for (const [key, label] of order) {
     for (let i = 1; i <= 2; i++) {
       const main = makers[key]();
-      const combo = wrapWithBonus(key, totalStats, main);
+      // 기본 자동 생성에서는 보너스 번호 생성하지 않음
+      const combo = { main, bonus: null };
       cards.push({ id: `${key}-${i}`, title: "", combo });
     }
   }
@@ -497,7 +506,9 @@ function renderAuto(state) {
   const sanitized = state.cards.map((c) => ({
     ...c,
     // 자동 섹션은 제목을 아예 숨김
-    title: ""
+    title: "",
+    // 보너스 번호 표시 안 함
+    showBonus: false
   }));
   const grid = document.getElementById("autoGrid");
   grid.innerHTML = sanitized.map((c) => renderCard(c)).join("\n");
@@ -653,12 +664,36 @@ window.addEventListener("DOMContentLoaded", () => {
     const grid = document.getElementById(gridId);
     if (!grid) return;
     const cards = Array.from(grid.querySelectorAll('.card'));
-    const lines = cards.map((card) => {
-      const balls = Array.from(card.querySelectorAll('.ball'));
-      const main = balls.slice(0, 6).map(el => Number(el.textContent));
-      const bonus = Number(balls[balls.length - 1].textContent);
-      return `${main.join(', ')} + ${bonus}`;
-    });
+    const lines = [];
+    for (const card of cards) {
+      // 여러 조합이 있는 카드인지 확인 (각 조합이 별도 줄로 나뉨)
+      const comboRows = Array.from(card.querySelectorAll('.flex.items-center.justify-between'));
+      if (comboRows.length > 0) {
+        // 여러 조합이 있는 경우: 각 조합마다 별도 줄로 복사
+        for (const row of comboRows) {
+          const balls = Array.from(row.querySelectorAll('.ball'));
+          if (balls.length < 6) continue;
+          const main = balls.slice(0, 6).map(el => Number(el.textContent));
+          if (balls.length >= 7) {
+            const bonus = Number(balls[balls.length - 1].textContent);
+            lines.push(`${main.join(', ')} + ${bonus}`);
+          } else {
+            lines.push(main.join(', '));
+          }
+        }
+      } else {
+        // 단일 조합인 경우: 기존 로직
+        const balls = Array.from(card.querySelectorAll('.ball'));
+        if (balls.length < 6) continue;
+        const main = balls.slice(0, 6).map(el => Number(el.textContent));
+        if (balls.length >= 7) {
+          const bonus = Number(balls[balls.length - 1].textContent);
+          lines.push(`${main.join(', ')} + ${bonus}`);
+        } else {
+          lines.push(main.join(', '));
+        }
+      }
+    }
     if (lines.length === 0) return;
     navigator.clipboard?.writeText(lines.join('\n'));
   };
@@ -710,16 +745,26 @@ function exportCustomCSV() {
   const header = [
     "condition",
     "index",
-    "n1","n2","n3","n4","n5","n6",
-    "bonus"
+    "n1","n2","n3","n4","n5","n6"
   ];
   const rows = [header.join(",")];
   for (const c of lastCustomCards) {
-    const [cond, idxStr] = c.id.split("-");
-    const idx = idxStr || "";
-    const m = c.combo.main;
-    const row = [cond, idx, m[0], m[1], m[2], m[3], m[4], m[5], c.combo.bonus];
-    rows.push(row.join(","));
+    // 여러 조합이 있는 카드인지 확인
+    if (c.combos && c.combos.length > 0) {
+      // 각 조합마다 별도 행으로 추가
+      for (let idx = 0; idx < c.combos.length; idx++) {
+        const m = c.combos[idx].main;
+        const row = [c.id, idx + 1, m[0], m[1], m[2], m[3], m[4], m[5]];
+        rows.push(row.join(","));
+      }
+    } else {
+      // 단일 조합인 경우 (기존 구조)
+      const [cond, idxStr] = c.id.split("-");
+      const idx = idxStr || "";
+      const m = c.combo.main;
+      const row = [cond, idx, m[0], m[1], m[2], m[3], m[4], m[5]];
+      rows.push(row.join(","));
+    }
   }
   const csv = rows.join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
