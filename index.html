@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LuckyStat — 통계 기반 로또 번호 생성기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="text-slate-900">
+    <header class="max-w-5xl mx-auto px-4 pt-10 pb-6">
+        <h1 class="text-2xl app-title">
+          <div class="font-normal">LuckyStat</div>
+          <div class="font-normal">통계 기반</div>
+          <div class="font-bold">로또 번호 생성기</div>
+        </h1>
+        <div class="text-sm text-slate-700 font-medium mt-2 header-compact"><span class="font-semibold">1195회 (25.10.25)</span> <span id="latestBalls"></span></div>
+        
+      
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 pb-16">
+      <section class="bg-white rounded-xl shadow-sm border p-4 md:p-6">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold">기본 자동 생성</h2>
+          <div class="flex items-center gap-2">
+            <button id="exportBtn" class="px-3 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">엑셀로 받기</button>
+            <button id="copyAllAutoBtn" class="px-3 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">모든번호 복사</button>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600 mb-3">일요일 오전 7시에 자동 갱신됩니다. <span id="autoNextRefresh" class="text-sm text-slate-500">갱신: -</span></p>
+        <div id="autoGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </section>
+
+      <section class="bg-white rounded-xl shadow-sm border p-4 md:p-6 mt-6">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold">사용자 지정 생성</h2>
+          <div class="flex items-center gap-2">
+            <button id="generateBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-500">생성</button>
+            <button id="clearBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-500">초기화</button>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-3" id="conditions">
+          <label class="condition-item">
+            <input type="checkbox" class="condition-checkbox" value="pureRandom" checked />
+            <div class="condition-card">
+              <div class="flex items-center justify-between gap-2">
+                <div class="condition-title">무자비하게</div>
+                <label class="text-sm text-slate-600 flex items-center gap-2">개수
+                  <input type="number" min="1" max="10" value="2" class="cond-count w-20 px-2 py-1 border rounded-md" data-cond="pureRandom" />
+                </label>
+              </div>
+            </div>
+          </label>
+          <label class="condition-item">
+            <input type="checkbox" class="condition-checkbox" value="weightedRandom" checked />
+            <div class="condition-card">
+              <div class="flex items-center justify-between gap-2">
+                <div class="condition-title">통계에 의한</div>
+                <label class="text-sm text-slate-600 flex items-center gap-2">개수
+                  <input type="number" min="1" max="10" value="2" class="cond-count w-20 px-2 py-1 border rounded-md" data-cond="weightedRandom" />
+                </label>
+              </div>
+            </div>
+          </label>
+          <label class="condition-item">
+            <input type="checkbox" class="condition-checkbox" value="consecutiveRandom" checked />
+            <div class="condition-card">
+              <div class="flex items-center justify-between gap-2">
+                <div class="condition-title">연속 2자리수 1~2쌍</div>
+                <label class="text-sm text-slate-600 flex items-center gap-2">개수
+                  <input type="number" min="1" max="10" value="2" class="cond-count w-20 px-2 py-1 border rounded-md" data-cond="consecutiveRandom" />
+                </label>
+              </div>
+            </div>
+          </label>
+          <label class="condition-item">
+            <input type="checkbox" class="condition-checkbox" value="weightedWithConsecutive" checked />
+            <div class="condition-card">
+              <div class="flex items-center justify-between gap-2">
+                <div class="condition-title">통계 + 연속 2자리수</div>
+                <label class="text-sm text-slate-600 flex items-center gap-2">개수
+                  <input type="number" min="1" max="10" value="2" class="cond-count w-20 px-2 py-1 border rounded-md" data-cond="weightedWithConsecutive" />
+                </label>
+              </div>
+            </div>
+          </label>
+          <label class="condition-item">
+            <input type="checkbox" class="condition-checkbox" value="weightedExcludeBottom10" checked />
+            <div class="condition-card">
+              <div class="flex items-center justify-between gap-2">
+                <div class="condition-title">통계 하위 10개 제외</div>
+                <label class="text-sm text-slate-600 flex items-center gap-2">개수
+                  <input type="number" min="1" max="10" value="2" class="cond-count w-20 px-2 py-1 border rounded-md" data-cond="weightedExcludeBottom10" />
+                </label>
+              </div>
+            </div>
+          </label>
+
+          <label class="condition-item">
+            <input type="checkbox" class="condition-checkbox" value="colorPreference" checked />
+            <div class="condition-card">
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="condition-title">좋아하는 색</div>
+                <label class="text-sm text-slate-600 flex items-center gap-2">개수
+                  <input type="number" min="1" max="10" value="2" class="cond-count w-20 px-2 py-1 border rounded-md" data-cond="colorPreference" />
+                </label>
+              </div>
+              <div class="flex flex-wrap gap-2 text-sm" id="colorChips">
+                <label class="inline-flex items-center gap-1">
+                  <input type="checkbox" class="color-chip hidden" data-color="blue" checked />
+                  <span class="ball blue selectable selected" data-color="blue" style="width:24px;height:24px;font-weight:600">&nbsp;</span>
+                </label>
+                <label class="inline-flex items-center gap-1">
+                  <input type="checkbox" class="color-chip hidden" data-color="green" checked />
+                  <span class="ball green selectable selected" data-color="green" style="width:24px;height:24px;font-weight:600">&nbsp;</span>
+                </label>
+                <label class="inline-flex items-center gap-1">
+                  <input type="checkbox" class="color-chip hidden" data-color="orange" checked />
+                  <span class="ball orange selectable selected" data-color="orange" style="width:24px;height:24px;font-weight:600">&nbsp;</span>
+                </label>
+                <label class="inline-flex items-center gap-1">
+                  <input type="checkbox" class="color-chip hidden" data-color="red" checked />
+                  <span class="ball red selectable selected" data-color="red" style="width:24px;height:24px;font-weight:600">&nbsp;</span>
+                </label>
+                <label class="inline-flex items-center gap-1">
+                  <input type="checkbox" class="color-chip hidden" data-color="purple" checked />
+                  <span class="ball purple selectable selected" data-color="purple" style="width:24px;height:24px;font-weight:600">&nbsp;</span>
+                </label>
+              </div>
+            </div>
+          </label>
+        </div>
+        
+        <div class="mt-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-base font-semibold">결과</h3>
+            <div class="flex items-center gap-2">
+              <button id="exportCustomBtn" class="px-3 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">엑셀로 받기</button>
+              <button id="copyAllCustomBtn" class="px-3 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">모든번호 복사</button>
+            </div>
+          </div>
+          <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+        </div>
+      </section>
+
+      <div class="max-w-5xl mx-auto px-4 mt-4 flex items-center justify-end gap-2">
+        <button id="openDataBtn" class="px-3 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">데이터 관리</button>
+        <a href="./fonts.html" target="_blank" class="px-3 py-2 rounded-md bg-white border text-sm hover:bg-slate-100">서체 보기</a>
+      </div>
+    </main>
+
+    <!-- 데이터 관리 모달 -->
+    <div id="dataModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4">
+      <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg border overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b">
+          <h3 class="text-lg font-semibold">데이터 관리</h3>
+          <button id="closeDataBtn" class="px-2 py-1 rounded-md hover:bg-slate-100">닫기</button>
+        </div>
+        <div class="p-5 grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">weekly_ranges (탭/CSV)</label>
+            <textarea id="weeklyRangesInput" class="textarea" rows="8" placeholder="1-5\t92\t12\n6-10\t85\t11\n...\n41-45\t38\t5"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">missed_numbers (간단 리스트)</label>
+            <textarea id="missedNumbersInput" class="textarea" rows="8" placeholder="11-20: 18\n21-30: 30\n41-45: 43,44"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium mb-1">total_stats (CSV: num,count)</label>
+            <textarea id="totalStatsInput" class="textarea font-mono" rows="10" placeholder="num,count\n34,204\n27,202\n12,202\n...\n9,156"></textarea>
+          </div>
+        </div>
+        <div class="px-5 pb-5 flex items-center gap-2">
+          <button id="parseBtn" class="px-3 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">파싱/검증</button>
+          <button id="saveBtn" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500">저장</button>
+          <div id="parseStatus" class="text-sm text-slate-500 ml-auto">-</div>
+        </div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+  </html>
+
+

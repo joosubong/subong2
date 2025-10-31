@@ -1,0 +1,39 @@
+:root{--blue:#60a5fa;--green:#34d399;--orange:#fdba74;--red:#f87171;--purple:#a78bfa}
+body{font-family:"Nanum Gothic","Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#E2E2DA}
+.app-title{font-size:2rem!important}
+.app-title>div{line-height:40px}
+.condition-item{display:flex;gap:.75rem}
+.condition-item input{margin-top:.5rem}
+.condition-card{flex:1;border:1px solid #e5e7eb;padding:.75rem;border-radius:.75rem;background:white}
+.condition-title{font-weight:600}
+.condition-desc{font-size:.875rem;color:#6b7280}
+.ball{display:inline-flex;align-items:center;justify-content:center;width:33px;height:33px;border-radius:9999px;font-weight:700;color:#334155}
+.ball.selectable{cursor:pointer;transition:transform .12s ease,outline-color .12s ease}
+.ball.selectable:hover{transform:scale(1.05)}
+.ball.selectable.selected{position:relative}
+.ball.selectable.selected::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:14px}
+.ball.bonus{background:#cbd5e1;color:#334155}
+.ball.blue{background:var(--blue)}
+.ball.green{background:var(--green)}
+.ball.orange{background:var(--orange)}
+.ball.red{background:var(--red)}
+.ball.purple{background:var(--purple)}
+.header-compact .ball{width:25px;height:25px;font-size:12px;line-height:25px;padding:0}
+.header-compact .ball{color:#fff}
+.header-compact .ball.blue{background:#2563eb}
+.header-compact .ball.green{background:#059669}
+.header-compact .ball.orange{background:#ea580c}
+.header-compact .ball.red{background:#dc2626}
+.header-compact .ball.purple{background:#6d28d9}
+.header-compact .ball.bonus{background:#64748b}
+.card{border:1px solid #e5e7eb;border-radius:.75rem;background:white;padding:.75rem}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.card-title{font-weight:600}
+.card-actions{display:flex;gap:.25rem}
+.btn{border:1px solid #e5e7eb;background:white;border-radius:.5rem;padding:.25rem .5rem;font-size:8pt}
+.btn:hover{background:#f8fafc}
+.btn-copy{background:#d8d8cf;border-color:#c9c9c0}
+.btn-copy:hover{background:#d1d1c8}
+.textarea{width:100%;border:1px solid #e5e7eb;border-radius:.5rem;padding:.5rem;background:#fff}
+
+
